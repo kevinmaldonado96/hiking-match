@@ -1,0 +1,93 @@
+version: "3.9"
+services:
+
+  hiking-match:
+    build: ./hiking-match-service/
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://hiking-match-db:5432/hiking-match
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - hiking-match-db
+    networks:
+      - hiking_match_network
+
+  hiking-match-db:
+    image: postgres
+    container_name: hiking-match-db
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_DB: hiking-match
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - hiking_match_data:/var/lib/postgresql/data
+    networks:
+      - hiking_match_network
+
+  hiking-routes:
+    build: ./hiking-routes-service/
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: mongodb://hiking-routes-db:27017/hiking-routes
+      RABBITMQ_USER: kevinmq
+      RABBITMQ_PASSWORD: kevinmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_NEW_TOPIC_NAME: routeTopic
+      RABBITMQ_NEW_QUEUE_NAME: routeQueue
+      RABBITMQ_NEW_ROUTING_KEY: routeNew
+    depends_on:
+      - hiking-routes-db
+    networks:
+      - hiking_match_network
+
+  hiking-routes-db:
+    image: mongo
+    container_name: hiking-routes-db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - hiking-routes_data:/data/db
+    networks:
+      - hiking_match_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"   # Puerto AMQP (para Celery)
+      - "15672:15672" # UI Web para RabbitMQ
+    environment:
+      RABBITMQ_DEFAULT_USER: kevinmq
+      RABBITMQ_DEFAULT_PASS: kevinmq
+    networks:
+      - hiking_match_network
+
+#  celery_worker:
+#    build: ./worker/.
+#    command: celery -A worker worker --loglevel=info
+#    environment:
+#      CELERY_BROKER_URL: amqp://kevinmq:kevinmq@rabbitmq:5672//
+#    depends_on:
+#      - rabbitmq
+#      - blogs_db
+#    networks:
+#      - app_net
+
+
+volumes:
+  hiking-routes_data:
+  hiking_match_data:
+
+networks:
+  hiking_match_network:
