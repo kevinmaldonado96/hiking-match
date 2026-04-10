@@ -18,6 +18,11 @@
             <artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>common-security</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
@@ -48,7 +53,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>org.example.hikingroutesservice.HikingRoutesServiceApplication</mainClass>
+                    <mainClass>org.example.HikingRoutesServiceApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
@@ -60,5 +65,11 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>common-security</id>
+            <url>https://maven.pkg.github.com/kevinmaldonado96/common-security</url>
+        </repository>
+    </repositories>
 
 </project>

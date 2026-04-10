@@ -1,0 +1,101 @@
+version: "3.9"
+services:
+
+  hiking-match:
+    build:
+      context: ./hiking-match-service/
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: ${HM_DB_URL:-jdbc:postgresql://hiking-match-db:5432/hiking-match}
+      DB_USER: ${HM_DB_USER:-postgres}
+      DB_PASSWORD: ${HM_DB_PASSWORD}
+      CLIENTS_URLS_ROUTES: ${CLIENTS_URLS_ROUTES:-http://hiking-routes:8080/api}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_NEW_QUEUE_NAME: ${RABBITMQ_NEW_QUEUE_NAME:-routeQueue}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SENGRID_API_KEY: ${SENGRID_API_KEY}
+      SENGRID_FROM_EMAIL: ${SENGRID_FROM_EMAIL}
+    depends_on:
+      - hiking-match-db
+    networks:
+      - hiking_match_network
+
+  hiking-match-db:
+    image: postgres
+    container_name: hiking-match-db
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hiking-match}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - hiking_match_data:/var/lib/postgresql/data
+    networks:
+      - hiking_match_network
+
+  hiking-routes:
+    build:
+      context: ./hiking-routes-service/
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: ${HR_DB_URL:-mongodb://hiking-routes-db:27017/hiking-routes}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_NEW_TOPIC_NAME: ${RABBITMQ_NEW_TOPIC_NAME:-routeTopic}
+      RABBITMQ_NEW_QUEUE_NAME: ${RABBITMQ_NEW_QUEUE_NAME:-routeQueue}
+      RABBITMQ_NEW_ROUTING_KEY: ${RABBITMQ_NEW_ROUTING_KEY:-routeNew}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
+    depends_on:
+      - hiking-routes-db
+    networks:
+      - hiking_match_network
+
+  hiking-routes-db:
+    image: mongo
+    container_name: hiking-routes-db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - hiking-routes_data:/data/db
+    networks:
+      - hiking_match_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - hiking_match_network
+
+volumes:
+  hiking-routes_data:
+  hiking_match_data:
+
+networks:
+  hiking_match_network:

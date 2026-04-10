@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+  hiking-routes:
+    build:
+      context: ./hiking-routes-service/
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: ${HR_DB_URL:-mongodb://hiking-routes-db:27017/hiking-routes}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_NEW_TOPIC_NAME: ${RABBITMQ_NEW_TOPIC_NAME:-routeTopic}
+      RABBITMQ_NEW_QUEUE_NAME: ${RABBITMQ_NEW_QUEUE_NAME:-routeQueue}
+      RABBITMQ_NEW_ROUTING_KEY: ${RABBITMQ_NEW_ROUTING_KEY:-routeNew}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
+    depends_on:
+      - hiking-routes-db
+    networks:
+      - hiking_match_network
+  hiking-routes-db:
+    image: mongo
+    container_name: hiking-routes-db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - hiking-routes_data:/data/db
+    networks:
+      - hiking_match_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - hiking_match_network
+
+volumes:
+  hiking-routes_data:
+
+networks:
+  hiking_match_network:
