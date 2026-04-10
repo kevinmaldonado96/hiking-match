@@ -12,7 +12,7 @@ services:
       DB_URL: ${HM_DB_URL:-jdbc:postgresql://hiking-match-db:5432/hiking-match}
       DB_USER: ${HM_DB_USER:-postgres}
       DB_PASSWORD: ${HM_DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET} 
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
     depends_on:
       - hiking-match-db
